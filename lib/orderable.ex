@@ -32,47 +32,57 @@ defmodule Orderable do
   ]
   ```
   """
-  @spec reorder([item()], integer(), integer()) :: [item()]
 
-  def reorder(items, from, to)
-      when is_list(items) and is_integer(from) and is_integer(to) and
+  @spec reorder([item()], integer(), integer(), keyword()) :: [item()]
+
+  def reorder(items, from, to, opts \\ [])
+      when is_list(items) and is_integer(from) and is_integer(to) and is_list(opts) and
              0 <= from and from < length(items) do
+    update_fun = Keyword.get(opts, :fun, &update_item/2)
+    key = Keyword.get(opts, :key, :order)
+
     to = if to > 0, do: to, else: 0
 
-    do_reorder(items, from, to)
+    do_reorder(items, from, to, update_fun, key)
   end
 
-  defp do_reorder(items, from, to) when from > to do
+  defp do_reorder(items, from, to, update_fun, key) when from > to do
     {leading_items, rest} = Enum.split(items, to)
     {[target_head | _] = target_items, trailing_items} = Enum.split(rest, from - to + 1)
 
-    target_items =
+    updated_target_items =
       target_items
       |> Enum.chunk_every(2, 1)
       |> Enum.map(fn
-        [item1, item2] -> update_item(item1, item2.order)
-        [item] -> update_item(item, target_head.order)
+        [item1, item2] -> update_fun.(item1, item2[key])
+        [item] -> update_fun.(item, target_head[key])
       end)
 
-    leading_items ++ target_items ++ trailing_items
+    updated_leading_items = Enum.map(leading_items, &update_fun.(&1, &1[key]))
+    updated_trailing_items = Enum.map(trailing_items, &update_fun.(&1, &1[key]))
+
+    updated_leading_items ++ updated_target_items ++ updated_trailing_items
   end
 
-  defp do_reorder(items, from, to) when from < to do
+  defp do_reorder(items, from, to, update_fun, key) when from < to do
     {leading_items, rest} = Enum.split(items, from)
     {[target_head | _] = target_items, trailing_items} = Enum.split(rest, to - from + 1)
 
-    target_items =
+    updated_target_items =
       target_items
       |> Enum.chunk_every(2, 1)
       |> Enum.map(fn
-        [item1, item2] -> update_item(item2, item1.order)
-        [item] -> update_item(target_head, item.order)
+        [item1, item2] -> update_fun.(item2, item1[key])
+        [item] -> update_fun.(target_head, item[key])
       end)
 
-    leading_items ++ target_items ++ trailing_items
+    updated_leading_items = Enum.map(leading_items, &update_fun.(&1, &1[key]))
+    updated_trailing_items = Enum.map(trailing_items, &update_fun.(&1, &1[key]))
+
+    updated_leading_items ++ updated_target_items ++ updated_trailing_items
   end
 
-  defp do_reorder(items, _, _), do: items
+  defp do_reorder(items, _, _, _, _), do: items
 
   defp update_item(item, order) when is_map(item) or is_struct(item) do
     %{item | order: order}

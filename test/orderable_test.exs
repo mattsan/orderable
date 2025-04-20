@@ -8,7 +8,7 @@ defmodule OrderableTest do
     [items: items]
   end
 
-  describe "reorder/3 from 0" do
+  describe "reorder/4 from 0" do
     test "move #0 to #-1", %{items: items} do
       assert [
                %{name: "item-0", order: 0},
@@ -80,7 +80,7 @@ defmodule OrderableTest do
     end
   end
 
-  describe "reorder/3 from 1" do
+  describe "reorder/4 from 1" do
     test "move #1 to #-1", %{items: items} do
       assert [
                %{name: "item-1", order: 0},
@@ -152,7 +152,7 @@ defmodule OrderableTest do
     end
   end
 
-  describe "reorder/3 from 2" do
+  describe "reorder/4 from 2" do
     test "move #2 to #-1", %{items: items} do
       assert [
                %{name: "item-2", order: 0},
@@ -224,7 +224,7 @@ defmodule OrderableTest do
     end
   end
 
-  describe "reorder/3 from 3" do
+  describe "reorder/4 from 3" do
     test "move #3 to #-1", %{items: items} do
       assert [
                %{name: "item-3", order: 0},
@@ -296,7 +296,7 @@ defmodule OrderableTest do
     end
   end
 
-  describe "reorder/3 from 4" do
+  describe "reorder/4 from 4" do
     test "move #4 to #-1", %{items: items} do
       assert [
                %{name: "item-4", order: 0},
@@ -368,9 +368,72 @@ defmodule OrderableTest do
     end
   end
 
-  describe "reorder/3 with invalid from" do
+  describe "reorder/4 with custom update-function" do
+    setup do
+      [custom_fun: fn item, order -> {item, %{order: order}} end]
+    end
+
+    test "move #1 to #3", %{items: items, custom_fun: custom_fun} do
+      assert [
+               {%{name: "item-0", order: 0}, %{order: 0}},
+               {%{name: "item-2", order: 20}, %{order: 10}},
+               {%{name: "item-3", order: 30}, %{order: 20}},
+               {%{name: "item-1", order: 10}, %{order: 30}},
+               {%{name: "item-4", order: 40}, %{order: 40}}
+             ] =
+               Orderable.reorder(items, 1, 3, fun: custom_fun)
+               |> Enum.sort_by(fn {_, %{order: order}} -> order end)
+    end
+
+    test "move #3 to #1", %{items: items, custom_fun: custom_fun} do
+      assert [
+               {%{name: "item-0", order: 0}, %{order: 0}},
+               {%{name: "item-3", order: 30}, %{order: 10}},
+               {%{name: "item-1", order: 10}, %{order: 20}},
+               {%{name: "item-2", order: 20}, %{order: 30}},
+               {%{name: "item-4", order: 40}, %{order: 40}}
+             ] =
+               Orderable.reorder(items, 3, 1, fun: custom_fun)
+               |> Enum.sort_by(fn {_, %{order: order}} -> order end)
+    end
+  end
+
+  describe "reorder/4 with custom key" do
+    setup do
+      items = Enum.map(0..4, &%{name: "item-#{&1}", sequence: &1 * 10})
+      custom_fun = &%{&1 | sequence: &2}
+
+      [items: items, custom_fun: custom_fun]
+    end
+
+    test "move #1 to #3", %{items: items, custom_fun: custom_fun} do
+      assert [
+               %{name: "item-0", sequence: 0},
+               %{name: "item-2", sequence: 10},
+               %{name: "item-3", sequence: 20},
+               %{name: "item-1", sequence: 30},
+               %{name: "item-4", sequence: 40}
+             ] =
+               Orderable.reorder(items, 1, 3, key: :sequence, fun: custom_fun)
+               |> Enum.sort_by(& &1.sequence)
+    end
+
+    test "move #3 to #1", %{items: items, custom_fun: custom_fun} do
+      assert [
+               %{name: "item-0", sequence: 0},
+               %{name: "item-3", sequence: 10},
+               %{name: "item-1", sequence: 20},
+               %{name: "item-2", sequence: 30},
+               %{name: "item-4", sequence: 40}
+             ] =
+               Orderable.reorder(items, 3, 1, key: :sequence, fun: custom_fun)
+               |> Enum.sort_by(& &1.sequence)
+    end
+  end
+
+  describe "reorder/4 with invalid from" do
     test "move #-1 to #2", %{items: items} do
-      message = "no function clause matching in Orderable.reorder/3"
+      message = "no function clause matching in Orderable.reorder/4"
 
       assert_raise(FunctionClauseError, message, fn ->
         Orderable.reorder(items, -1, 2)
@@ -378,7 +441,7 @@ defmodule OrderableTest do
     end
 
     test "move #5 to #2", %{items: items} do
-      message = "no function clause matching in Orderable.reorder/3"
+      message = "no function clause matching in Orderable.reorder/4"
 
       assert_raise(FunctionClauseError, message, fn ->
         Orderable.reorder(items, 5, 2)
