@@ -85,7 +85,7 @@ defmodule Orderable do
   This option is intended for use with changesets etc.
 
   ```elixir
-  Orderable.reorder(items, 3, 1, fun: &Item.chengeset(&1, %{&3 => &2[&3]))
+  Orderable.reorder(items, 3, 1, fun: &Item.chengeset(&1, %{&3 => Map.get(&2, &3)))
   ```
   """
 
