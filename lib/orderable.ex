@@ -10,9 +10,9 @@ defmodule Orderable do
 
   Items must be Map or Struct with ordering key.
 
-  - `items` - ordered list of items.
-  - `from` - index of item from.
-  - `to` - index of item to.
+  - `items` - An ordered list of items.
+  - `from` - An index of item from. It must be `0` <= `from` < `length(items)`.
+  - `to` - An index of item to. If it is less than to 0, it is considered to be 0, and if it is greater than or equal to the length of items, it is considered to be the end of items.
 
   ```elixir
   iex> items = [
@@ -34,11 +34,15 @@ defmodule Orderable do
   """
   @spec reorder([item()], integer(), integer()) :: [item()]
 
-  def reorder(items, from, to) when is_integer(from) and is_integer(to) and to < 0 do
-    reorder(items, from, 0)
+  def reorder(items, from, to)
+      when is_list(items) and is_integer(from) and is_integer(to) and
+             0 <= from and from < length(items) do
+    to = if to > 0, do: to, else: 0
+
+    do_reorder(items, from, to)
   end
 
-  def reorder(items, from, to) when is_integer(from) and is_integer(to) and from > to do
+  defp do_reorder(items, from, to) when from > to do
     {leading_items, rest} = Enum.split(items, to)
     {[target_head | _] = target_items, trailing_items} = Enum.split(rest, from - to + 1)
 
@@ -53,7 +57,7 @@ defmodule Orderable do
     leading_items ++ target_items ++ trailing_items
   end
 
-  def reorder(items, from, to) when is_integer(from) and is_integer(to) and from < to do
+  defp do_reorder(items, from, to) when from < to do
     {leading_items, rest} = Enum.split(items, from)
     {[target_head | _] = target_items, trailing_items} = Enum.split(rest, to - from + 1)
 
@@ -68,7 +72,7 @@ defmodule Orderable do
     leading_items ++ target_items ++ trailing_items
   end
 
-  def reorder(items, _, _), do: items
+  defp do_reorder(items, _, _), do: items
 
   defp update_item(item, order) when is_map(item) or is_struct(item) do
     %{item | order: order}

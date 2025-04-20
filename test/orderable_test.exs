@@ -367,4 +367,22 @@ defmodule OrderableTest do
              ] = Orderable.reorder(items, 4, 5) |> Enum.sort_by(& &1.order)
     end
   end
+
+  describe "reorder/3 with invalid from" do
+    test "move #-1 to #2", %{items: items} do
+      message = "no function clause matching in Orderable.reorder/3"
+
+      assert_raise(FunctionClauseError, message, fn ->
+        Orderable.reorder(items, -1, 2)
+      end)
+    end
+
+    test "move #5 to #2", %{items: items} do
+      message = "no function clause matching in Orderable.reorder/3"
+
+      assert_raise(FunctionClauseError, message, fn ->
+        Orderable.reorder(items, 5, 2)
+      end)
+    end
+  end
 end
