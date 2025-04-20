@@ -81,6 +81,12 @@ defmodule Orderable do
     {%{name: "five", order: 5}, %{order: 5}}
   ]
   ```
+
+  This option is intended for use with changesets etc.
+
+  ```elixir
+  Orderable.reorder(items, 3, 1, fun: &Item.chengeset(&1, %{&3 => &2[&3]))
+  ```
   """
 
   @spec reorder([item()], integer(), integer(), keyword()) :: [item()]
