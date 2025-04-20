@@ -370,7 +370,12 @@ defmodule OrderableTest do
 
   describe "reorder/4 with custom update-function" do
     setup do
-      [custom_fun: fn item, order -> {item, %{order: order}} end]
+      custom_fun =
+        fn target_item, reference_item, :order ->
+          {target_item, %{order: reference_item.order}}
+        end
+
+      [custom_fun: custom_fun]
     end
 
     test "move #1 to #3", %{items: items, custom_fun: custom_fun} do
@@ -401,12 +406,11 @@ defmodule OrderableTest do
   describe "reorder/4 with custom key" do
     setup do
       items = Enum.map(0..4, &%{name: "item-#{&1}", sequence: &1 * 10})
-      custom_fun = &%{&1 | sequence: &2}
 
-      [items: items, custom_fun: custom_fun]
+      [items: items]
     end
 
-    test "move #1 to #3", %{items: items, custom_fun: custom_fun} do
+    test "move #1 to #3", %{items: items} do
       assert [
                %{name: "item-0", sequence: 0},
                %{name: "item-2", sequence: 10},
@@ -414,11 +418,10 @@ defmodule OrderableTest do
                %{name: "item-1", sequence: 30},
                %{name: "item-4", sequence: 40}
              ] =
-               Orderable.reorder(items, 1, 3, key: :sequence, fun: custom_fun)
-               |> Enum.sort_by(& &1.sequence)
+               Orderable.reorder(items, 1, 3, key: :sequence) |> Enum.sort_by(& &1.sequence)
     end
 
-    test "move #3 to #1", %{items: items, custom_fun: custom_fun} do
+    test "move #3 to #1", %{items: items} do
       assert [
                %{name: "item-0", sequence: 0},
                %{name: "item-3", sequence: 10},
@@ -426,8 +429,7 @@ defmodule OrderableTest do
                %{name: "item-2", sequence: 30},
                %{name: "item-4", sequence: 40}
              ] =
-               Orderable.reorder(items, 3, 1, key: :sequence, fun: custom_fun)
-               |> Enum.sort_by(& &1.sequence)
+               Orderable.reorder(items, 3, 1, key: :sequence) |> Enum.sort_by(& &1.sequence)
     end
   end
 
