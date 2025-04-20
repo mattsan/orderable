@@ -142,7 +142,8 @@ defmodule Orderable do
 
   defguardp is_item(term) when is_map(term) or is_struct(term)
 
-  defp update_item(target_item, reference_item, key) when is_item(target_item) and is_item(reference_item) do
-    %{target_item | key => reference_item[key]}
+  defp update_item(target_item, reference_item, key)
+       when is_item(target_item) and is_item(reference_item) do
+    %{target_item | key => Map.get(reference_item, key)}
   end
 end
